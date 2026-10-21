@@ -20,5 +20,5 @@ try:
 except AttributeError as e:
   print("Erreur:", e)
 
-print("Historique des transactions:", c1._compte_bancaire__historique)
+# print("Historique des transactions:", c1._compte_bancaire__historique) # Fonctionne mais attention
 
