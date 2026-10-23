@@ -39,4 +39,4 @@ BasMauvais()
 
 # Pourquoi Droite et Base apparaissent 2 fois ? 
 # Le super() dans Gauche ne pointe pas vers Base mais vers la classe suivante dans le MRO de l'instance, c'est à dire Droite
-# Gauche n'hériste pas de Droite, et pourtant son super() l'appelle (Merci MRO)
+# Gauche n'hérite pas de Droite, et pourtant son super() l'appelle (Merci MRO)
