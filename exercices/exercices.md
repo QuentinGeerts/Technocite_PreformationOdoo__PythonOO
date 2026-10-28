@@ -68,24 +68,23 @@ C001 supprimée. Toujours au catalogue : Clavier. Toujours client : Alice.
 On gère le stock d'un entrepôt. Toutes les classes de l'exercice sont des data classes : pas de `__init__`, `__repr__` ni `__eq__` écrits à la main.
  
 **`Adresse`** — non modifiable
- 
 - `rue`, `code_postal`, `ville`.
-**`Article`**
- 
+
+**`Article`** 
 - `reference`, `nom`, `prix` (float), `quantite` (int, 0 par défaut), `tags` (liste de str, vide par défaut).
 - Les `tags` ne comptent pas dans la comparaison `==`.
 - `__post_init__` : lève une `ValueError` si le prix est ≤ 0 ou la quantité négative ; met le nom en forme (`"  clavier "` → `"Clavier"`).
 - Propriété `valeur_stock` = prix × quantité.
-**`MouvementStock`** — non modifiable et triable
- 
+
+**`MouvementStock`** — non modifiable et triable 
 - `date` (`datetime.date`), `reference` (de l'article), `quantite` (positive = entrée, négative = sortie).
 - Trier une liste de mouvements doit les ranger par date.
-**`Entrepot`**
- 
+
+**`Entrepot`** 
 - `nom`, `adresse` (une `Adresse`), `articles` (liste vide par défaut).
 - `ajouter(article)`, `valeur_totale()`, `en_rupture()` → la liste des articles à quantité 0.
-**Dans `main.py`**
- 
+
+**Dans `main.py`** 
 1. Créez une adresse, puis essayez de modifier sa ville. Capturez l'erreur.
 2. Créez 4 articles : Clavier (49,90 € × 10), Souris (19,90 € × 25), Écran (189 € × 0), Casque (79 € × 4). Affichez-en un avec `print`.
 3. Créez un 2e clavier identique mais avec d'autres tags. Comparez-les avec `==` puis avec `is`.
@@ -127,17 +126,16 @@ BanqueError
 Chaque exception construit elle-même son message à partir de ses attributs.
  
 **`Compte`**
- 
 - `numero`, `titulaire`, solde privé, `decouvert_autorise` (0 par défaut), `bloque` (False par défaut).
 - `deposer(montant)` et `retirer(montant)` : `MontantInvalideError` si montant ≤ 0, `CompteBloqueError` si le compte est bloqué, `SoldeInsuffisantError` si le retrait dépasse solde + découvert.
 - `bloquer()` / `debloquer()`.
+
 **`Banque`**
- 
 - Un dictionnaire privé `{numero: Compte}`.
 - `ouvrir(compte)` et `trouver(numero)`. `trouver` attrape la `KeyError` du dictionnaire et lève à la place une `CompteIntrouvableError`, chaînée avec `from`.
 - `virement(source, destination, montant)` : retire puis dépose. Si le dépôt échoue, le retrait doit être annulé, puis l'exception relancée. Un virement est tout ou rien.
+
 **Dans `main.py`**
- 
 Ouvrez deux comptes : BE01 (Alice, 500 €, découvert 100 €) et BE02 (Bob, 50 €). Puis traitez cette liste d'opérations dans une boucle, avec un seul bloc `try/except/else/finally` :
  
 ```python
@@ -171,3 +169,61 @@ Bilan : 6 opérations, 2 réussies, 4 échouées
 ```
  
 Le solde de BE01 reste à -50 € après l'opération 5 : la preuve que le virement a bien été annulé.
+
+## Exercice 5 — Énumérations : helpdesk
+
+ 
+### Énoncé
+ 
+Un service informatique gère ses tickets de support. Aucune chaîne de caractères ne doit servir à représenter un statut, une priorité ou une catégorie : uniquement des énumérations.
+ 
+**`Priorite`** (`IntEnum`) : `BASSE` = 1, `NORMALE` = 2, `HAUTE` = 3, `CRITIQUE` = 4.
+ 
+- Propriété `delai_heures` : 72, 24, 8 et 2 h.
+**`Categorie`** (`Enum` avec `auto()`) : `MATERIEL`, `LOGICIEL`, `RESEAU`, `COMPTE`.
+ 
+**`Statut`** (`Enum`) : la valeur est le libellé affiché.
+ 
+| Membre | Valeur | Peut passer à |
+| --- | --- | --- |
+| `NOUVEAU` | "Nouveau" | `EN_COURS`, `FERME` |
+| `EN_COURS` | "En cours" | `EN_ATTENTE`, `RESOLU` |
+| `EN_ATTENTE` | "En attente client" | `EN_COURS` |
+| `RESOLU` | "Résolu" | `FERME`, `EN_COURS` (réouverture) |
+| `FERME` | "Fermé" | — |
+ 
+- Méthode `peut_passer_a(autre)` → bool, basée sur ce tableau.
+- Propriété `est_termine` → `True` pour `RESOLU` et `FERME`.
+**`Ticket`**
+ 
+- `numero`, `titre`, `priorite`, `categorie`, `statut` (`NOUVEAU` au départ), un historique des statuts.
+- `changer_statut(nouveau)` : lève une `ValueError` si la transition est interdite, sinon change le statut et l'ajoute à l'historique.
+
+**`Helpdesk`**
+- `ajouter(ticket)`.
+- `par_priorite()` → tickets du plus urgent au moins urgent.
+- `repartition()` → un dictionnaire `{Statut: nombre}` contenant **tous** les statuts, même ceux à 0.
+
+**Dans `main.py`**
+1. Affichez tous les libellés de statut en parcourant l'énumération (pas de liste écrite à la main).
+2. Créez 4 tickets : #1 Serveur mail en panne (`CRITIQUE`, `RESEAU`), #2 Imprimante bloquée (`NORMALE`, `MATERIEL`), #3 VPN instable (`HAUTE`, `RESEAU`), #4 Nouveau fond d'écran (`BASSE`, `LOGICIEL`).
+3. Faites passer #1 par `EN_COURS`, `RESOLU` puis `FERME` ; #2 par `EN_COURS` puis `EN_ATTENTE`.
+4. Tentez de passer #3 directement à `RESOLU`. Capturez l'erreur.
+5. Affichez les tickets par priorité, puis la répartition.
+6. Convertissez des saisies utilisateur en priorité : `"haute"`, `4` et `"urgente"` (cette dernière doit être gérée proprement).
+7. Affichez l'historique de #1.
+### Résultat attendu
+ 
+```
+Statuts : Nouveau, En cours, En attente client, Résolu, Fermé
+Transition refusée pour #3 : Nouveau → Résolu
+Tickets par priorité :
+  #1 CRITIQUE (2 h)  — Serveur mail en panne — Fermé
+  #3 HAUTE (8 h)     — VPN instable — Nouveau
+  #2 NORMALE (24 h)  — Imprimante bloquée — En attente client
+  #4 BASSE (72 h)    — Nouveau fond d'écran — Nouveau
+Répartition : Nouveau: 2 | En cours: 0 | En attente client: 1 | Résolu: 0 | Fermé: 1
+"haute" → HAUTE | 4 → CRITIQUE | "urgente" → priorité inconnue
+Historique #1 : Nouveau → En cours → Résolu → Fermé
+```
+ 
